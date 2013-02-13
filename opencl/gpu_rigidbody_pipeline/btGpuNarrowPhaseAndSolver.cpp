@@ -31,19 +31,7 @@ bool enableExperimentalCpuConcaveCollision = false;
 #include "../broadphase_benchmark/btRadixSort32CL.h"
 #include "LinearMath/btAabbUtil2.h"
 
-#include "btConvexUtility.h"
-#include "../gpu_rigidbody_pipeline2/ConvexHullContact.h"
 
-
-//#include "BulletDynamics/Dynamics/btRigidBody.h"
-
-#include "../../dynamics/basic_demo/Stubs/AdlMath.h"
-#include "../../dynamics/basic_demo/Stubs/AdlContact4.h"
-#include "../../dynamics/basic_demo/Stubs/AdlQuaternion.h"
-#include "../../dynamics/basic_demo/Stubs/AdlRigidBody.h"
-
-#include "../../dynamics/basic_demo/Stubs/ChNarrowPhase.h"
-#include "../../dynamics/basic_demo/Stubs/Solver.h"
 
 
 #define MAX_CONVEX_UNIQUE_EDGES 8192
@@ -77,73 +65,7 @@ struct ParallelSolveData
 	btOpenCLArray<u32>* m_offsets;
 };
 
-struct	CustomDispatchData
-{
-	btOpenCLArray<ChNarrowphase::ShapeData>* m_ShapeBuffer;
-#ifndef DISABLE_CONVEX_HEIGHTFIELD
-	btAlignedObjectArray<ConvexHeightField*>* m_shapePointers;
-#endif //DISABLE_CONVEX_HEIGHTFIELD
-    
-	btAlignedObjectArray<btConvexUtility*>* m_convexData;
-    
-	btAlignedObjectArray<ConvexPolyhedronCL> m_convexPolyhedra;
-	btAlignedObjectArray<btVector3> m_uniqueEdges;
-	btAlignedObjectArray<btVector3> m_convexVertices;
-	btAlignedObjectArray<int> m_convexIndices;
-    
-	btOpenCLArray<ConvexPolyhedronCL>* m_convexPolyhedraGPU;
-	btOpenCLArray<btVector3>* m_uniqueEdgesGPU;
-	btOpenCLArray<btVector3>* m_convexVerticesGPU;
-	btOpenCLArray<int>* m_convexIndicesGPU;
-    
-    btOpenCLArray<float4>* m_worldVertsB1GPU;
-    btOpenCLArray<int4>* m_clippingFacesOutGPU;
-    btOpenCLArray<float4>* m_worldNormalsAGPU;
-    btOpenCLArray<float4>* m_worldVertsA1GPU;
-    btOpenCLArray<float4>* m_worldVertsB2GPU;
-    
-	btAlignedObjectArray<btGpuChildShape> m_cpuChildShapes;
-	btOpenCLArray<btGpuChildShape>*	m_gpuChildShapes;
-    
-	btAlignedObjectArray<btGpuFace> m_convexFaces;
-	btOpenCLArray<btGpuFace>* m_convexFacesGPU;
-    
-	GpuSatCollision*	m_gpuSatCollision;
-	
-    
-    
-    
-    
-	btAlignedObjectArray<int2>* m_pBufPairsCPU;
-    
-	btOpenCLArray<int2>* m_convexPairsOutGPU;
-	btOpenCLArray<int2>* m_planePairs;
-    
-	btOpenCLArray<Contact4>* m_pBufContactOutGPU;
-	btAlignedObjectArray<Contact4>* m_pBufContactOutCPU;
-	//adl::ChNarrowphase<adl::TYPE_CL>::Data* m_Data;
-	ChNarrowphase* m_narrowPhase;
-    
-    
-	btAlignedObjectArray<RigidBodyBase::Body>* m_bodyBufferCPU;
-	btOpenCLArray<RigidBodyBase::Body>* m_bodyBufferGPU;
-    
-	btAlignedObjectArray<RigidBodyBase::Inertia>*	m_inertiaBufferCPU;
-	btOpenCLArray<RigidBodyBase::Inertia>*	m_inertiaBufferGPU;
-    
-	Solver* m_solverGPU;
-    
-	btOpenCLArray<Constraint4>*		m_contactCGPU;
-	void*			m_frictionCGPU;
-    
-	int m_numAcceleratedShapes;
-	int m_numAcceleratedRigidBodies;
-    
-	btAlignedObjectArray<btCollidable>	m_collidablesCPU;
-	btOpenCLArray<btCollidable>*	m_collidablesGPU;
-    
-    
-};
+
 
 
 btGpuNarrowphaseAndSolver::btGpuNarrowphaseAndSolver(cl_context ctx, cl_device_id device, cl_command_queue queue)

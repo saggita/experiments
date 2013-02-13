@@ -535,6 +535,123 @@ void	GpuBoxDemo::setupScene(const ConstructionInfo& ci)
 	}
 }
 
+void GpuSoftbodyDemo::setupScene(const ConstructionInfo& ci)
+{
+	btCollisionShape* groundShape =0;
+
+	if (ci.m_useConcaveMesh)
+	{
+		btTriangleMesh* meshInterface = new btTriangleMesh();
+
+		btAlignedObjectArray<btVector3> concaveVertices;
+		concaveVertices.push_back(btVector3(0,-20,0));
+		concaveVertices.push_back(btVector3(80,10,80));
+		concaveVertices.push_back(btVector3(80,10,-80));
+		concaveVertices.push_back(btVector3(-80,10,-80));
+		concaveVertices.push_back(btVector3(-80,10,80));
+
+		meshInterface->addTriangle(concaveVertices[0],concaveVertices[1],concaveVertices[2],true);
+		meshInterface->addTriangle(concaveVertices[0],concaveVertices[2],concaveVertices[3],true);
+		meshInterface->addTriangle(concaveVertices[0],concaveVertices[3],concaveVertices[4],true);
+		meshInterface->addTriangle(concaveVertices[0],concaveVertices[4],concaveVertices[1],true);
+
+#if 0
+		groundShape = new btBvhTriangleMeshShape(meshInterface,true);//btStaticPlaneShape(btVector3(0,1,0),50);
+#else
+		btBoxShape* shape =new btBoxShape(btVector3(btScalar(250.),btScalar(10.),btScalar(250.)));
+		shape->initializePolyhedralFeatures();
+		groundShape = shape;
+#endif
+
+	} else
+	{
+		groundShape  = new btBoxShape(btVector3(btScalar(250.),btScalar(50.),btScalar(250.)));
+	}
+	
+	m_collisionShapes.push_back(groundShape);
+
+	btTransform groundTransform;
+	groundTransform.setIdentity();
+	groundTransform.setOrigin(btVector3(0,0,0));
+
+	//We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
+	if (ci.m_useConcaveMesh)
+	{
+		btScalar mass(0.);
+
+		//rigidbody is dynamic if and only if mass is non zero, otherwise static
+		bool isDynamic = (mass != 0.f);
+
+		btVector3 localInertia(0,0,0);
+		if (isDynamic)
+			groundShape->calculateLocalInertia(mass,localInertia);
+
+		//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass,myMotionState,groundShape,localInertia);
+		btRigidBody* body = new btRigidBody(rbInfo);
+
+		//add the body to the dynamics world
+		m_dynamicsWorld->addRigidBody(body);
+	}
+	
+	vertices.clear();
+	vertices.push_back(btVector3(1,1,1));
+	vertices.push_back(btVector3(1,1,-1));
+	vertices.push_back(btVector3(-1,1,-1));
+	vertices.push_back(btVector3(-1,1,1));
+	vertices.push_back(btVector3(1,-1,1));
+	vertices.push_back(btVector3(1,-1,-1));
+	vertices.push_back(btVector3(-1,-1,-1));
+	vertices.push_back(btVector3(-1,-1,1));
+
+	btPolyhedralConvexShape* colShape = new btConvexHullShape(&vertices[0].getX(),vertices.size());
+	colShape->initializePolyhedralFeatures();
+	m_collisionShapes.push_back(colShape);
+
+	// Adding a box rigidbody
+	{
+		btTransform boxTransform;
+		boxTransform.setIdentity();
+		boxTransform.setRotation(btQuaternion(btVector3(1.0, 1.0, 1.0).normalize(), 57.0));
+
+		btScalar mass(1.0f);
+		btVector3 localInertia(0, 0, 0);
+
+		if ( mass != 0 )
+			colShape->calculateLocalInertia(mass, localInertia);
+
+		boxTransform.setOrigin(btVector3(0, 15.0, 0));
+
+		btDefaultMotionState* myMotionState = new btDefaultMotionState(boxTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
+		btRigidBody* body = new btRigidBody(rbInfo);
+
+		m_dynamicsWorld->addRigidBody(body);
+	}
+
+	if ( 1 )
+	{
+		btSoftbodyCL* pCloth = new btSoftbodyCL();
+		//assert(pCloth->Load("..\\..\\bin\\circle2723.obj"));
+		assert(pCloth->Load("..\\..\\bin\\circle14200.obj"));
+		pCloth->SetVertexMass(1.0f);
+		pCloth->TranslateW(0.0f, 15.0f, 0.0f);
+		pCloth->SetGravity(btVector3(0, -9.8, 0));
+		pCloth->SetKb(0.45f); 
+		pCloth->SetKst(0.995f); 
+		pCloth->SetFrictionCoef(0.5f);
+		pCloth->SetNumIterForConstraintSolver(5);
+		/*pCloth->AddPin(20);
+		pCloth->AddPin(500);*/
+		pCloth->SetMargin(0.1f);
+		pCloth->Initialize();	
+
+		((btGpuDynamicsWorld*)m_dynamicsWorld)->addSoftBody(pCloth);		
+	}
+	
+}
+
 void	GpuDemo::initPhysics(const ConstructionInfo& ci)
 {
 
@@ -606,6 +723,8 @@ void	GpuDemo::exitPhysics()
 
 	
 }
+
+
 
 
 

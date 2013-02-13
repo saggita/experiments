@@ -52,12 +52,94 @@ struct	CustomDispatchData;
 
 #include "../basic_initialize/btOpenCLInclude.h"
 
+#include "btConvexUtility.h"
+#include "../gpu_rigidbody_pipeline2/ConvexHullContact.h"
+
+
+//#include "BulletDynamics/Dynamics/btRigidBody.h"
+
+#include "../../dynamics/basic_demo/Stubs/AdlMath.h"
+#include "../../dynamics/basic_demo/Stubs/AdlContact4.h"
+#include "../../dynamics/basic_demo/Stubs/AdlQuaternion.h"
+#include "../../dynamics/basic_demo/Stubs/AdlRigidBody.h"
+
+#include "../../dynamics/basic_demo/Stubs/ChNarrowPhase.h"
+#include "../../dynamics/basic_demo/Stubs/Solver.h"
+
 enum
 {
 	BT_SOLVER_N_SPLIT = 16,
 	BT_SOLVER_N_BATCHES = 4,
 	BT_SOLVER_N_OBJ_PER_SPLIT = 10,
 	BT_SOLVER_N_TASKS_PER_BATCH = BT_SOLVER_N_SPLIT*BT_SOLVER_N_SPLIT,
+};
+
+struct	CustomDispatchData
+{
+	btOpenCLArray<ChNarrowphase::ShapeData>* m_ShapeBuffer;
+#ifndef DISABLE_CONVEX_HEIGHTFIELD
+	btAlignedObjectArray<ConvexHeightField*>* m_shapePointers;
+#endif //DISABLE_CONVEX_HEIGHTFIELD
+    
+	btAlignedObjectArray<btConvexUtility*>* m_convexData;
+    
+	btAlignedObjectArray<ConvexPolyhedronCL> m_convexPolyhedra;
+	btAlignedObjectArray<btVector3> m_uniqueEdges;
+	btAlignedObjectArray<btVector3> m_convexVertices;
+	btAlignedObjectArray<int> m_convexIndices;
+    
+	btOpenCLArray<ConvexPolyhedronCL>* m_convexPolyhedraGPU;
+	btOpenCLArray<btVector3>* m_uniqueEdgesGPU;
+	btOpenCLArray<btVector3>* m_convexVerticesGPU;
+	btOpenCLArray<int>* m_convexIndicesGPU;
+    
+    btOpenCLArray<float4>* m_worldVertsB1GPU;
+    btOpenCLArray<int4>* m_clippingFacesOutGPU;
+    btOpenCLArray<float4>* m_worldNormalsAGPU;
+    btOpenCLArray<float4>* m_worldVertsA1GPU;
+    btOpenCLArray<float4>* m_worldVertsB2GPU;
+    
+	btAlignedObjectArray<btGpuChildShape> m_cpuChildShapes;
+	btOpenCLArray<btGpuChildShape>*	m_gpuChildShapes;
+    
+	btAlignedObjectArray<btGpuFace> m_convexFaces;
+	btOpenCLArray<btGpuFace>* m_convexFacesGPU;
+    
+	GpuSatCollision*	m_gpuSatCollision;
+	
+    
+    
+    
+    
+	btAlignedObjectArray<int2>* m_pBufPairsCPU;
+    
+	btOpenCLArray<int2>* m_convexPairsOutGPU;
+	btOpenCLArray<int2>* m_planePairs;
+    
+	btOpenCLArray<Contact4>* m_pBufContactOutGPU;
+	btAlignedObjectArray<Contact4>* m_pBufContactOutCPU;
+	//adl::ChNarrowphase<adl::TYPE_CL>::Data* m_Data;
+	ChNarrowphase* m_narrowPhase;
+    
+    
+	btAlignedObjectArray<RigidBodyBase::Body>* m_bodyBufferCPU;
+	btOpenCLArray<RigidBodyBase::Body>* m_bodyBufferGPU;
+    
+	btAlignedObjectArray<RigidBodyBase::Inertia>*	m_inertiaBufferCPU;
+	btOpenCLArray<RigidBodyBase::Inertia>*	m_inertiaBufferGPU;
+    
+	Solver* m_solverGPU;
+    
+	btOpenCLArray<Constraint4>*		m_contactCGPU;
+	void*			m_frictionCGPU;
+    
+	int m_numAcceleratedShapes;
+	int m_numAcceleratedRigidBodies;
+    
+	btAlignedObjectArray<btCollidable>	m_collidablesCPU;
+	btOpenCLArray<btCollidable>*	m_collidablesGPU;
+    
+    
 };
 
 class btGpuNarrowphaseAndSolver
@@ -119,7 +201,7 @@ public:
 	btCollidable& getCollidableCpu(int collidableIndex);
 	const btCollidable& getCollidableCpu(int collidableIndex) const;
 	
-
+	const CustomDispatchData* getCustomDispatchData() const { return m_internalData; }
 };
 
 #endif //GPU_NARROWPHASE_SOLVER_H

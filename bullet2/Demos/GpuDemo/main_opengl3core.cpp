@@ -60,6 +60,7 @@ GpuDemo::CreateFunc* allDemos[]=
 	SpheresDemo::CreateFunc,
 	GpuCompoundDemo::CreateFunc,
 	EmptyDemo::CreateFunc,
+	GpuSoftbodyDemo::CreateFunc,
 };
 
 

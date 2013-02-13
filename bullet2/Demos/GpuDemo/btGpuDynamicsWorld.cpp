@@ -3,6 +3,8 @@
 
 #include "../../../opencl/gpu_rigidbody_pipeline2/CLPhysicsDemo.h"
 #include "../../../opencl/gpu_rigidbody_pipeline/btGpuNarrowPhaseAndSolver.h"
+#include "../../../opencl/softbodyCL/btSoftbodyCL.h"
+#include "../../../opencl/gpu_rigidbody_pipeline2/btGpuSapBroadphase.h"
 #include "BulletCollision/CollisionShapes/btPolyhedralConvexShape.h"
 #include "BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h"
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
@@ -19,7 +21,8 @@
 
 
 btGpuDynamicsWorld::btGpuDynamicsWorld(int preferredOpenCLPlatformIndex,int preferredOpenCLDeviceIndex)
-:btDynamicsWorld(0,0,0),
+//:btDynamicsWorld(0,0,0),
+:btSoftRigidDynamicsWorld(NULL, NULL, NULL, NULL),
 m_gravity(0,-10,0),
 m_once(true)
 {
@@ -27,11 +30,19 @@ m_once(true)
 	bool useInterop = false;
 	///platform and device are swapped, todo: fix this and make it consistent
 	m_gpuPhysics->init(preferredOpenCLDeviceIndex,preferredOpenCLPlatformIndex,useInterop);
+
+	m_pSoftBodySolverCL = new btSoftBodySimulationSolverOpenCL(m_gpuPhysics);
 }
 
 btGpuDynamicsWorld::~btGpuDynamicsWorld()
 {
 	delete m_gpuPhysics;
+
+	if ( m_pSoftBodySolverCL )
+	{
+		delete m_pSoftBodySolverCL;
+		m_pSoftBodySolverCL = NULL;
+	}
 }
 
 void btGpuDynamicsWorld::exitOpenCL()
@@ -57,6 +68,8 @@ int		btGpuDynamicsWorld::stepSimulation( btScalar timeStep,int maxSubSteps, btSc
 	{
 		m_once = false;
 		m_gpuPhysics->writeBodiesToGpu();
+
+		m_pSoftBodySolverCL->Initialize();
 	}
 
 	m_gpuPhysics->stepSimulation();
@@ -84,6 +97,13 @@ int		btGpuDynamicsWorld::stepSimulation( btScalar timeStep,int maxSubSteps, btSc
 		}
 	}
 
+	// simulate softbodies
+	m_pSoftBodySolverCL->Integrate(timeStep);
+	m_pSoftBodySolverCL->AdvancePosition(timeStep);
+	m_pSoftBodySolverCL->UpdateBoundingVolumes(timeStep);
+	m_pSoftBodySolverCL->ResolveCollision(timeStep);
+	//m_pSoftBodySolverCL->ResolveCollisionCPU(timeStep);
+	m_pSoftBodySolverCL->ReadBackFromGPU();
 
 #ifndef BT_NO_PROFILE
 	//CProfileManager::Increment_Frame_Counter();
@@ -297,4 +317,48 @@ void	btGpuDynamicsWorld::removeCollisionObject(btCollisionObject* colObj)
 	btDynamicsWorld::removeCollisionObject(colObj);
 }
 
+void    btGpuDynamicsWorld::addSoftBody(btSoftbodyCL* softBody)
+{
+	const CAabb& aabb = softBody->GetAabb();
 
+	btVector3 aabbMin(aabb.Min()[0], aabb.Min()[1], aabb.Min()[2]);
+	btVector3 aabbMax(aabb.Max()[0], aabb.Max()[1], aabb.Max()[2]);
+
+	m_gpuPhysics->registerSoftbodyInstance(aabbMin, aabbMax, m_collisionObjects.size());
+
+	m_pSoftBodySolverCL->addSoftBody(softBody);
+}
+
+InternalData* btGpuDynamicsWorld::getInternalData() 
+{ 
+	btAssert(m_gpuPhysics);
+	return m_gpuPhysics->m_data;
+}
+
+void btGpuDynamicsWorld::getAabbs(btAlignedObjectArray<btVector3>& mins, btAlignedObjectArray<btVector3>& maxs)
+{
+	mins.clear();
+	maxs.clear();
+
+	btGpuSapBroadphase* pSap = m_gpuPhysics->getGpuSapBroadphase();
+
+	for ( int i = 0; i < pSap->m_allAabbsCPU.size(); i++ )
+	{
+		btVector3 min;
+		btVector3 max;
+
+		for ( int j = 0; j < 3; j++ )
+		{
+			min[j] = pSap->m_allAabbsCPU[i].m_min[j];
+			max[j] = pSap->m_allAabbsCPU[i].m_max[j];
+		}
+
+		mins.push_back(min);
+		maxs.push_back(max);
+	}
+
+	int numOverlapping = pSap->m_overlappingPairsCPU.size();
+
+	if ( numOverlapping > 0 )
+		int sdfsdfsdf = 0;
+}

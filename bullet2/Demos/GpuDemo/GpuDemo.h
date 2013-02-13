@@ -18,6 +18,7 @@ subject to the following restrictions:
 
 #include "LinearMath/btAlignedObjectArray.h"
 #include "DemosCommon/DemoApplication.h"
+#include "../../../opencl/softbodyCL/btSoftbodyCL.h"
 
 class btBroadphaseInterface;
 class btCollisionShape;
@@ -179,6 +180,21 @@ public:
 		return demo;
 	}
 	
+};
+
+class GpuSoftbodyDemo : public GpuDemo
+{
+public:
+	virtual void setupScene(const ConstructionInfo& ci);
+	virtual const char* getName()
+	{
+		return "GpuSoftbodyDemo";
+	}
+	static GpuDemo* CreateFunc()
+	{
+		GpuDemo* demo = new GpuSoftbodyDemo;
+		return demo;
+	}
 };
 
 #endif //GPU_DEMO_H

@@ -35,6 +35,7 @@ struct CLPhysicsDemo
 
 	int m_numPhysicsInstances;
 	int m_numDynamicPhysicsInstances;
+	int m_numSoftbodyInstances;
 	int m_maxShapeBufferCapacityInBytes;
 	int m_maxNumPhysicsInstances;
 	class btGpuNarrowphaseAndSolver* m_narrowphaseAndSolver;
@@ -64,6 +65,7 @@ struct CLPhysicsDemo
 	int		registerCompoundShape(btAlignedObjectArray<btGpuChildShape>* childShapes);
 
 	int		registerPhysicsInstance(float mass, const float* position, const float* orientation, int collisionShapeIndex, int userPointer);
+	int     registerSoftbodyInstance(const btVector3& aabbMin, const btVector3& aabbMax, int collisionObjectIndex);
 
 	void	setObjectTransform(const float* position, const float* orientation, int objectIndex);
 
@@ -78,6 +80,8 @@ struct CLPhysicsDemo
 	void	cleanup();
 
 	void	stepSimulation();
+
+	class btGpuSapBroadphase* getGpuSapBroadphase();
 };
 
 #endif//CL_PHYSICS_DEMO_H

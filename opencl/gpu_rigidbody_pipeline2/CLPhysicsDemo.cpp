@@ -63,7 +63,7 @@ const char* g_deviceName = 0;
 
 bool runOpenCLKernels = true;
 
-
+btGpuNarrowphaseAndSolver* g_narrowphaseAndSolver = 0;
 ConvexHeightField* s_convexHeightField = 0 ;
 
 
@@ -185,6 +185,10 @@ void	CLPhysicsDemo::readbackBodiesToCpu()
 	if (m_narrowphaseAndSolver)
 		m_narrowphaseAndSolver->readbackAllBodiesToCpu();
 
+	if (m_data->m_BroadphaseSap)
+	{
+		m_data->m_BroadphaseSap->readAabbsBackToCpu();
+	}
 }
 	
 void	CLPhysicsDemo::getObjectTransformFromCpu(float* position, float* orientation, int objectIndex)
@@ -591,7 +595,18 @@ int		CLPhysicsDemo::registerPhysicsInstance(float mass, const float* position, c
 	return bodyIndex;
 }
 
+int CLPhysicsDemo::registerSoftbodyInstance(const btVector3& aabbMin, const btVector3& aabbMax, int collisionObjectIndex)
+{
+	assert(useSapGpuBroadphase);
 
+	if (useSapGpuBroadphase)
+	{
+		m_data->m_BroadphaseSap->createProxy(aabbMin,aabbMax,collisionObjectIndex,1,1);
+		m_numSoftbodyInstances++;
+	}	
+
+	return collisionObjectIndex;
+}
 
 void	CLPhysicsDemo::init(int preferredDevice, int preferredPlatform, bool useInterop)
 {
@@ -600,6 +615,7 @@ void	CLPhysicsDemo::init(int preferredDevice, int preferredPlatform, bool useInt
 
 
 	m_narrowphaseAndSolver = new btGpuNarrowphaseAndSolver(g_cxMainContext,g_device,g_cqCommandQue);
+	g_narrowphaseAndSolver = m_narrowphaseAndSolver;
 
 	
 	//adl::Solver<adl::TYPE_CL>::allocate(g_deviceCL->allocate(
@@ -935,4 +951,9 @@ void	CLPhysicsDemo::stepSimulation()
 cl_mem	CLPhysicsDemo::getBodiesGpu()
 {
 	return m_narrowphaseAndSolver->getBodiesGpu();
+}
+
+btGpuSapBroadphase* CLPhysicsDemo::getGpuSapBroadphase() 
+{ 
+	return m_data->m_BroadphaseSap; 
 }

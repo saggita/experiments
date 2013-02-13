@@ -5,13 +5,15 @@ class btVector3;
 class btRigidBody;
 class btCollisionObject;
 struct btGpuInternalData;//use this struct to avoid 'leaking' all OpenCL headers into clients code base
-class CLPhysicsDemo;
+struct CLPhysicsDemo;
 
 #include "LinearMath/btAlignedObjectArray.h"
 #include "BulletDynamics/Dynamics/btDynamicsWorld.h"
+#include "BulletSoftBody/btSoftRigidDynamicsWorld.h"
+#include "../../../opencl/softbodyCL/btSoftBodySimulationSolverOpenCL.h"
 
-
-class btGpuDynamicsWorld : public btDynamicsWorld
+//class btGpuDynamicsWorld : public btDynamicsWorld
+class btGpuDynamicsWorld : public btSoftRigidDynamicsWorld
 {
 	
 	btAlignedObjectArray<const class  btCollisionShape*> m_uniqueShapes;
@@ -29,6 +31,8 @@ class btGpuDynamicsWorld : public btDynamicsWorld
 
 	
 public:
+	btSoftBodySimulationSolverOpenCL* m_pSoftBodySolverCL;
+
 	btGpuDynamicsWorld(int preferredOpenCLPlatformIndex,int preferredOpenCLDeviceIndex);
 
 	virtual ~btGpuDynamicsWorld();
@@ -45,6 +49,7 @@ public:
 	void	setGravity(const btVector3& gravity);
 
 	void	addRigidBody(btRigidBody* body);
+	void    addSoftBody(btSoftbodyCL* softBody);
 
 	void	removeCollisionObject(btCollisionObject* colObj);
 
@@ -101,8 +106,9 @@ public:
 			btAssert(0);
 		}
 
-		
+		struct InternalData* getInternalData();
 
+		void getAabbs(btAlignedObjectArray<btVector3>& mins, btAlignedObjectArray<btVector3>& maxs); 
 };
 
 

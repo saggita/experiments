@@ -441,6 +441,14 @@ void btGpuSapBroadphase::writeAabbsToGpu()
 
 }
 
+void btGpuSapBroadphase::readAabbsBackToCpu()
+{
+	m_allAabbsGPU.copyToHost(m_allAabbsCPU);
+
+	m_overlappingPairsCPU.resize(m_overlappingPairs.size());
+	m_overlappingPairs.copyFromHost(m_overlappingPairsCPU);
+}
+
 void btGpuSapBroadphase::createLargeProxy(const btVector3& aabbMin,  const btVector3& aabbMax, int userPtr ,short int collisionFilterGroup,short int collisionFilterMask)
 {
 	int index = userPtr;

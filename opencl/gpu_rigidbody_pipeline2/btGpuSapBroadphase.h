@@ -49,6 +49,7 @@ class btGpuSapBroadphase
 	btAlignedObjectArray<btSapAabb>	m_largeAabbsCPU;
 
 	btOpenCLArray<btInt2>		m_overlappingPairs;
+	btAlignedObjectArray<btInt2> m_overlappingPairsCPU;
 
 	//temporary gpu work memory
 	btOpenCLArray<btSortData>	m_gpuSmallSortData;
@@ -65,6 +66,8 @@ class btGpuSapBroadphase
 
 	//call writeAabbsToGpu after done making all changes (createProxy etc)
 	void writeAabbsToGpu();
+
+	void readAabbsBackToCpu();
 
 	cl_mem	getAabbBuffer();
 	int	getNumOverlap();
