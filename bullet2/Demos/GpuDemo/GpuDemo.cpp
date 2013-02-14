@@ -572,7 +572,7 @@ void GpuSoftbodyDemo::setupScene(const ConstructionInfo& ci)
 
 	btTransform groundTransform;
 	groundTransform.setIdentity();
-	groundTransform.setOrigin(btVector3(0,0,0));
+	groundTransform.setOrigin(btVector3(0,-30,0));
 
 	//We can also use DemoApplication::localCreateRigidBody, but for clarity it is provided here:
 	if (ci.m_useConcaveMesh)
@@ -650,6 +650,16 @@ void GpuSoftbodyDemo::setupScene(const ConstructionInfo& ci)
 		((btGpuDynamicsWorld*)m_dynamicsWorld)->addSoftBody(pCloth);		
 	}
 	
+}
+
+void GpuSoftbodyDemo::renderScene()
+{
+	btAlignedObjectArray<btSoftbodyCL*>& softbodies = ((btGpuDynamicsWorld*)m_dynamicsWorld)->m_pSoftBodySolverCL->getSoftBodies();
+
+	for ( int i = 0; i < softbodies.size(); i++ )
+	{
+		softbodies[i]->Render(false);
+	}
 }
 
 void	GpuDemo::initPhysics(const ConstructionInfo& ci)

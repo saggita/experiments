@@ -195,6 +195,7 @@ public:
 		GpuDemo* demo = new GpuSoftbodyDemo;
 		return demo;
 	}
+	virtual void renderScene();
 };
 
 #endif //GPU_DEMO_H
