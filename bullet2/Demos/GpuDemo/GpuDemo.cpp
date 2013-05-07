@@ -642,9 +642,11 @@ void GpuSoftbodyDemo::setupScene(const ConstructionInfo& ci)
 		pCloth->SetKst(0.995f); 
 		pCloth->SetFrictionCoef(0.5f);
 		pCloth->SetNumIterForConstraintSolver(5);
-		/*pCloth->AddPin(20);
-		pCloth->AddPin(500);*/
 		pCloth->SetMargin(0.1f);
+		pCloth->GetVertexArray()[0].m_InvMass = 0;
+		pCloth->GetVertexArray()[0].m_Vel = btVector3(3.0f, 0, 0);
+		pCloth->Initialize();
+
 		pCloth->Initialize();	
 
 		((btGpuDynamicsWorld*)m_dynamicsWorld)->addSoftBody(pCloth);		

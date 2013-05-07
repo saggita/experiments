@@ -248,12 +248,7 @@ void ComputeNextVertexPositionsKernel(const u32 numVertices, const float dt, __g
 	if( vertexID < numVertices )
 	{		
 		VertexClothData vertexData = gVertexClothData[vertexID];	
-
-		//if ( vertexData.m_PinIndex >= 0 )
-		//	vertexData.m_PosNext = vertexData.m_Pos;
-		//else
-			vertexData.m_PosNext = vertexData.m_Pos + vertexData.m_Vel * dt;
-		
+		vertexData.m_PosNext = vertexData.m_Pos + vertexData.m_Vel * dt;
 		gVertexClothData[vertexID] = vertexData;
 	}
 }
@@ -279,8 +274,12 @@ void ApplyForcesKernel(const u32 numVertices, const float dt, __global VertexClo
 	if( vertexID < numVertices )
 	{		
 		VertexClothData vertexData = gVertexClothData[vertexID];
-		vertexData.m_Vel += vertexData.m_Accel * dt;
-		gVertexClothData[vertexID] = vertexData;		
+
+		if ( vertexData.m_InvMass > 0 )
+		{
+			vertexData.m_Vel += vertexData.m_Accel * dt;
+			gVertexClothData[vertexID] = vertexData;		
+		}
 	}
 }
 
@@ -340,8 +339,12 @@ void UpdateVelocitiesKernel(const u32 numVertices, const float dt, __global Vert
 	if( vertexID < numVertices )
 	{		
 		VertexClothData vertexData = gVertexClothData[vertexID];
-		vertexData.m_Vel = (vertexData.m_PosNext - vertexData.m_Pos)/dt;
-		gVertexClothData[vertexID] = vertexData;
+
+		if ( vertexData.m_InvMass > 0 )
+		{
+			vertexData.m_Vel = (vertexData.m_PosNext - vertexData.m_Pos)/dt;
+			gVertexClothData[vertexID] = vertexData;		
+		}
 	}
 }
 

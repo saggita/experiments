@@ -120,15 +120,13 @@ public:
 	}
 };
 
-//class CClothPin;
-
 //----------------------------------------------
 // btSoftbodyNodeCL
 //----------------------------------------------
 class btSoftbodyNodeCL
 {
 public:
-	btSoftbodyNodeCL() : m_InvMass(1.0),/* m_pPin(NULL),*/m_Index(-1), m_IndexCloth(-1), m_PinIndex(-1), m_Vel(0, 0, 0), m_Accel(0, 0, 0)
+	btSoftbodyNodeCL() : m_InvMass(1.0), m_Index(-1), m_IndexCloth(-1), m_PinIndex(-1), m_Vel(0, 0, 0), m_Accel(0, 0, 0)
 	{
 	}
 
@@ -139,11 +137,9 @@ public:
 	btVector3 m_Pos;
 	btVector3 m_PosNext;
 	btVector3 m_Vel;
-	float m_InvMass; // = 1.0 / m_Mass. In case mass is infinite, m_InvMass is zero and m_Mass doesn't have any meaning.
-					  // Currently infinite mass is not supported. CClothPin should be used to pin cloth vertex.
+	float m_InvMass; // Inverse mass. To pin the vertex, set zero to make the mass infinite. 
 	btVector3 m_Accel;
 	int m_PinIndex;
-	//CClothPin* m_pPin;	
 		
 	// array of indexes of stretch springs connected to this vertex 
 	btAlignedObjectArray<int> m_StrechSpringIndexes; 
@@ -155,71 +151,6 @@ public:
 	int GetIndex() const { return m_Index; }
 	void SetIndex(int index) { m_Index = index; }
 };
-
-
-//----------------------------------------------
-// CClothPin
-//----------------------------------------------
-//class CClothPin
-//{
-//public:
-//	CClothPin() : m_Pos(0, 0, 0), m_Vel(0, 0, 0), m_VertexIndex(-1), m_pVertex(NULL) {}
-//	CClothPin(btSoftbodyNodeCL* pVertex, btVector3 pos)
-//	{
-//		if ( pVertex != NULL )
-//		{
-//			m_VertexIndex = pVertex->GetIndex();
-//			m_pVertex = pVertex;
-//		}
-//
-//		m_Pos = pos;
-//	}
-//	CClothPin(const CClothPin& other)
-//	{
-//		m_VertexIndex = other.m_VertexIndex;
-//		m_pVertex = other.m_pVertex;
-//		m_Pos = other.m_Pos;		
-//		m_Vel = other.m_Vel;
-//	}
-//	~CClothPin() {};
-//
-//private:
-//	int m_VertexIndex;
-//	btSoftbodyNodeCL* m_pVertex;
-//	btVector3 m_Pos;
-//	btVector3 m_Vel;
-//
-//public:
-//	btVector3& GetPinPos() { return m_Pos; }
-//	const btVector3& GetPinPos() const { return m_Pos; }
-//	void SetPinPos(const btVector3& pos) { m_Pos = pos; }
-//	btVector3& GetPinVelocity() { return m_Vel; }
-//	const btVector3& GetPinVelocity() const { return m_Vel; }
-//	void SetPinVelocity(const btVector3& vel) { m_Vel = vel; }
-//
-//	btSoftbodyNodeCL* GetPinnedVertex() { return m_pVertex; }
-//	const btSoftbodyNodeCL* GetPinnedVertex() const { return m_pVertex; }
-//	void SetPinnedVertex(btSoftbodyNodeCL* pVertex)
-//	{
-//		if ( pVertex != NULL )
-//		{
-//			m_VertexIndex = pVertex->GetIndex();
-//			m_pVertex = pVertex;
-//		}
-//	}
-//
-//	CClothPin& operator=(const CClothPin& other)
-//	{
-//		m_VertexIndex = other.m_VertexIndex;
-//		m_pVertex = other.m_pVertex;
-//		m_Pos = other.m_Pos;		
-//		m_Vel = other.m_Vel;
-//		return (*this);
-//	}
-//};
-
-
-
 
 class btSoftbodyCL
 {
@@ -246,8 +177,6 @@ public:
 	btAlignedObjectArray<btSoftbodyLinkCL> m_BendSpringArray;
 	btAlignedObjectArray<btVector3> m_NormalVecArray;
 	btAlignedObjectArray<btSoftbodyTriangleCL> m_TriangleArray;
-
-	//btAlignedObjectArray<CClothPin> m_PinArray;
 
 	btAlignedObjectArray<CAabb> m_AABBVertexArray;
 
@@ -291,8 +220,6 @@ public:
 
 	float GetMargin() const { return m_Margin; }
 	void SetMargin(float margin) { m_Margin = margin; }
-
-	void AddPin(int vertexIndex);
 
 	btAlignedObjectArray<btSoftbodyNodeCL>& GetVertexArray() { return m_VertexArray; }
 	const btAlignedObjectArray<btSoftbodyNodeCL>& GetVertexArray() const { return m_VertexArray; }

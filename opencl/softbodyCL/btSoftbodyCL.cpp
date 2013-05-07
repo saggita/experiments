@@ -1,13 +1,5 @@
 #include <omp.h>
 
-//#ifdef WIN32
-//#  define WIN32_LEAN_AND_MEAN
-//#  define NOMINMAX
-//#  include <windows.h>
-//#  undef WIN32_LEAN_AND_MEAN
-//#  undef NOMINMAX
-//#endif
-
 #include <iostream>
 #include <fstream>
 #include "..\..\rendering\rendertest\OpenGLInclude.h"
@@ -17,11 +9,6 @@
 #include "btSoftbodyCL.h"
 #include "StringTokenizer.h"
 #include "btSoftbodyTriangleCL.h"
-
-//#include "NarrowPhaseCollisionDetection.h"
-//#include "ConvexCollisionAlgorithm.h"
-//#include "CollisionObject.h"
-//#include "mathUtil.h"
 
 inline float clamp(float val, float low, float high)
 {
@@ -61,7 +48,6 @@ btSoftbodyCL::btSoftbodyCL(const btSoftbodyCL& other)
 	m_StrechSpringArray = other.m_StrechSpringArray;
 	m_BendSpringArray = other.m_BendSpringArray;
 	m_TriangleArray = other.m_TriangleArray;
-	m_NormalVecArray = other.m_NormalVecArray;
 
 	m_bDeformable = other.m_bDeformable;
 	m_bEqualVertexMass = other.m_bEqualVertexMass;
@@ -84,7 +70,6 @@ void btSoftbodyCL::Initialize()
 {
 	m_bDeformable = true;
 
-	//GenerateBatches();
 	InitializeBoundingVolumes();
 }
 
@@ -145,24 +130,7 @@ bool btSoftbodyCL::Load(const char* filename)
 		}
 		else if ( sToken == "vn" ) // vertex normal
 		{
-			btVector3 n;
-			
-			// x
-			++iter;
-			sToken = (*iter);			
-			n[0] = (float)atof(sToken.c_str());
-
-			// y
-			++iter;
-			sToken = (*iter);			
-			n[1] = (float)atof(sToken.c_str());
-
-			// z
-			++iter;
-			sToken = (*iter);			
-			n[2] = (float)atof(sToken.c_str());
-
-			//m_NormalVecArray.push_back(n);
+			// skip this.
 		}
 		else if ( sToken == "f" ) // face
 		{
@@ -180,9 +148,6 @@ bool btSoftbodyCL::Load(const char* filename)
 				if ( numFound > 0 )
 				{
 					tri.m_IndexVrx[i++] = atoi(sTokens2[0].c_str())-1;
-
-					//if ( numFound == 3 )
-					//	tri.m_IndexNormalVec = atoi(sTokens2[2].c_str());
 				}
 				else if ( numFound == 0 && sToken != "" )
 				{
@@ -196,9 +161,7 @@ bool btSoftbodyCL::Load(const char* filename)
 	}
 
 	inFile.close();
-
-	//m_NormalVecArray.resize(m_VertexArray.size());
-
+	
 	// Set up indexes for vertices
 	int index = 0;
 	for ( int i = 0; i < m_VertexArray.size(); i++ )
@@ -403,20 +366,6 @@ void btSoftbodyCL::SetTotalMass(float totalMass)
 	}
 }
 
-void btSoftbodyCL::AddPin(int vertexIndex)
-{
-	/*if ( vertexIndex < 0 || vertexIndex >= (int)GetVertexArray().size() )
-		return;
-
-	btSoftbodyNodeCL* pVertex = &GetVertexArray()[vertexIndex];
-	pVertex->m_InvMass = 0;
-	CClothPin pin(pVertex, pVertex->m_Pos);
-	m_PinArray.push_back(pin);
-
-	pVertex->m_pPin = &m_PinArray[m_PinArray.size()-1];
-	pVertex->m_PinIndex = m_PinArray.size()-1;*/
-}
-
 class CColoringCompare
 {
 public:
@@ -426,7 +375,6 @@ public:
 	}
 
 };
-
 
 void btSoftbodyCL::GenerateBatches()
 {
@@ -563,9 +511,6 @@ void btSoftbodyCL::GenerateBatches()
 
 	m_numBatchStretchSpring++;
 
-	// sort stretch springs based on its color so that it will be ordered by batches. 
-	//std::sort(m_StrechSpringArray.begin(), m_StrechSpringArray.end(), ColoringCompare);
-
 	m_StrechSpringArray.quickSort(CColoringCompare());
 
 	m_BatchStretchSpringIndexArray.push_back(0);
@@ -602,12 +547,6 @@ void btSoftbodyCL::GenerateBatches()
 		}
 	}
 #endif
-
-	// !!!!!!!!!!!!!!!!!!
-	// TODO: Need to update m_StrechSpringIndexes because m_StrechSpringArray has been shuffled. !!!!!!!
-	// !!!!!!!!!!!!!!!!!!
-
-
 
 	//---------
 	// Bending
@@ -786,9 +725,6 @@ void btSoftbodyCL::Render(bool bBBox/* = false*/)
 
 	glEnd();
 
-	/*color[0] = 0.3f;
-	color[1] = 0.5f;
-	color[2] = 0.1f;*/
 	color[0] = 0.3f;
 	color[1] = 0.3f;
 	color[2] = 0.3f;
@@ -950,9 +886,7 @@ void btSoftbodyCL::ApplyGravity(float dt)
 	for ( int i = 0; i < (int)m_VertexArray.size(); i++ )
 	{
 		btSoftbodyNodeCL& vert = m_VertexArray[i];	
-
-		/*if ( !vert.m_pPin )*/
-			vert.m_Accel += m_Gravity;
+		vert.m_Accel += m_Gravity;
 	}
 }
 
@@ -970,11 +904,7 @@ void btSoftbodyCL::ComputeNextVertexPositions(float dt)
 	for ( int i = 0; i < (int)m_VertexArray.size(); i++ )
 	{
 		btSoftbodyNodeCL& vert = m_VertexArray[i];		
-
-		/*if ( !vert.m_pPin )
-			vert.m_PosNext = vert.m_Pos + vert.m_Vel * dt;
-		else*/
-			vert.m_PosNext = vert.m_Pos;
+		vert.m_PosNext = vert.m_Pos;
 	}
 }
 
@@ -994,10 +924,6 @@ void btSoftbodyCL::EnforceEdgeConstraints(float k, float dt)
 		btSoftbodyNodeCL& vert0 = m_VertexArray[spring.GetVertexIndex(0)];
 		btSoftbodyNodeCL& vert1 = m_VertexArray[spring.GetVertexIndex(1)];
 
-		// if both vertices are pinned, we do nothing. 
-		/*if ( vert0.m_pPin && vert1.m_pPin )
-			continue;*/
-
 		btVector3 vecNewSpring = vert0.m_PosNext - vert1.m_PosNext;
 
 		float newLen = vecNewSpring.length();
@@ -1008,19 +934,8 @@ void btSoftbodyCL::EnforceEdgeConstraints(float k, float dt)
 		btVector3 dVert0(0, 0, 0);
 		btVector3 dVert1(0, 0, 0);			
 
-		//if ( vert0.m_pPin && !vert1.m_pPin ) // if vert0 is pinned and vert1 is not
-		//{
-		//	dVert1 = cji * vert1.m_InvMass;
-		//}
-		//else if ( !vert0.m_pPin && vert1.m_pPin ) // if vert1 is pinned and vert0 is not
-		//{
-		//	dVert0 = -cji * vert0.m_InvMass;
-		//}
-		//else if ( !vert0.m_pPin && !vert1.m_pPin ) // if both are not pinned
-		{
-			dVert0 = -cji * vert0.m_InvMass;
-			dVert1 = cji * vert1.m_InvMass;
-		}
+		dVert0 = -cji * vert0.m_InvMass;
+		dVert1 = cji * vert1.m_InvMass;
 
 		vert0.m_PosNext +=  k * dVert0;
 		vert1.m_PosNext += k * dVert1;			  
@@ -1043,10 +958,6 @@ void btSoftbodyCL::EnforceBendingConstraints(float k, float dt)
 		btSoftbodyNodeCL& vert0 = m_VertexArray[spring.GetVertexIndex(0)];
 		btSoftbodyNodeCL& vert1 = m_VertexArray[spring.GetVertexIndex(1)];
 
-		// if both vertices are pinned, we do nothing. 
-		/*if ( vert0.m_pPin && vert1.m_pPin )
-			continue;*/
-
 		btVector3 vecNewSpring = vert0.m_PosNext - vert1.m_PosNext;
 
 		float newLen = vecNewSpring.length();
@@ -1057,19 +968,8 @@ void btSoftbodyCL::EnforceBendingConstraints(float k, float dt)
 		btVector3 dVert0(0, 0, 0);
 		btVector3 dVert1(0, 0, 0);			
 
-		//if ( vert0.m_pPin && !vert1.m_pPin ) // if vert0 is pinned and vert1 is not
-		//{
-		//	dVert1 = cji * vert1.m_InvMass;
-		//}
-		//else if ( !vert0.m_pPin && vert1.m_pPin ) // if vert1 is pinned and vert0 is not
-		//{
-		//	dVert0 = -cji * vert0.m_InvMass;
-		//}
-		//else if ( !vert0.m_pPin && !vert1.m_pPin ) // if both are not pinned
-		{
-			dVert0 = -cji * vert0.m_InvMass;
-			dVert1 = cji * vert1.m_InvMass;
-		}
+		dVert0 = -cji * vert0.m_InvMass;
+		dVert1 = cji * vert1.m_InvMass;
 
 		vert0.m_PosNext += k * dVert0;
 		vert1.m_PosNext += k * dVert1;			  
@@ -1096,11 +996,7 @@ void btSoftbodyCL::EnforceEdgeConstraintsBatched(float k, float dt)
 
 			btSoftbodyNodeCL& vert0 = m_VertexArray[spring.GetVertexIndex(0)];
 			btSoftbodyNodeCL& vert1 = m_VertexArray[spring.GetVertexIndex(1)];
-
-			// if both vertices are pinned, we do nothing. 
-			/*if ( vert0.m_pPin && vert1.m_pPin )
-				continue;*/
-
+			
 			btVector3 vecNewSpring = vert0.m_PosNext - vert1.m_PosNext;
 
 			float newLen = vecNewSpring.length();
@@ -1111,19 +1007,8 @@ void btSoftbodyCL::EnforceEdgeConstraintsBatched(float k, float dt)
 			btVector3 dVert0(0, 0, 0);
 			btVector3 dVert1(0, 0, 0);			
 
-			//if ( vert0.m_pPin && !vert1.m_pPin ) // if vert0 is pinned and vert1 is not
-			//{
-			//	dVert1 = cji * vert1.m_InvMass;
-			//}
-			//else if ( !vert0.m_pPin && vert1.m_pPin ) // if vert1 is pinned and vert0 is not
-			//{
-			//	dVert0 = -cji * vert0.m_InvMass;
-			//}
-			//else if ( !vert0.m_pPin && !vert1.m_pPin ) // if both are not pinned
-			{
-				dVert0 = -cji * vert0.m_InvMass;
-				dVert1 = cji * vert1.m_InvMass;
-			}
+			dVert0 = -cji * vert0.m_InvMass;
+			dVert1 = cji * vert1.m_InvMass;
 
 			vert0.m_PosNext += k * dVert0;
 			vert1.m_PosNext += k * dVert1;			  
@@ -1153,10 +1038,6 @@ void btSoftbodyCL::EnforceBendingConstraintsBatched(float k, float dt)
 			btSoftbodyNodeCL& vert0 = m_VertexArray[spring.GetVertexIndex(0)];
 			btSoftbodyNodeCL& vert1 = m_VertexArray[spring.GetVertexIndex(1)];
 
-			// if both vertices are pinned, we do nothing. 
-			/*if ( vert0.m_pPin && vert1.m_pPin )
-				continue;*/
-
 			btVector3 vecNewSpring = vert0.m_PosNext - vert1.m_PosNext;
 
 			float newLen = vecNewSpring.length();
@@ -1166,20 +1047,9 @@ void btSoftbodyCL::EnforceBendingConstraintsBatched(float k, float dt)
 
 			btVector3 dVert0(0, 0, 0);
 			btVector3 dVert1(0, 0, 0);			
-
-			//if ( vert0.m_pPin && !vert1.m_pPin ) // if vert0 is pinned and vert1 is not
-			//{
-			//	dVert1 = cji * vert1.m_InvMass;
-			//}
-			//else if ( !vert0.m_pPin && vert1.m_pPin ) // if vert1 is pinned and vert0 is not
-			//{
-			//	dVert0 = -cji * vert0.m_InvMass;
-			//}
-			//else if ( !vert0.m_pPin && !vert1.m_pPin ) // if both are not pinned
-			{
-				dVert0 = -cji * vert0.m_InvMass;
-				dVert1 = cji * vert1.m_InvMass;
-			}
+		
+			dVert0 = -cji * vert0.m_InvMass;
+			dVert1 = cji * vert1.m_InvMass;
 
 			vert0.m_PosNext += k * dVert0;
 			vert1.m_PosNext += k * dVert1;			  
@@ -1195,11 +1065,7 @@ bool btSoftbodyCL::AdvancePosition(float dt)
 	for ( int i = 0; i < (int)m_VertexArray.size(); i++ )
 	{
 		btSoftbodyNodeCL& vert = m_VertexArray[i];	
-
-		/*if ( vert.m_pPin )
-			vert.m_Pos = vert.m_pPin->GetPinPos();
-		else*/
-			vert.m_Pos = vert.m_Pos + vert.m_Vel * dt;
+		vert.m_Pos = vert.m_Pos + vert.m_Vel * dt;
 	}
 
 	return true;
@@ -1246,80 +1112,12 @@ bool btSoftbodyCL::Integrate(float dt)
 	return true;
 }
 
-//bool btSoftbodyCL::ResolveCollision(CCollisionObject& convexObject, float dt)
-//{
-//	CNarrowPhaseCollisionDetection np;
-//	np.SetConvexCollisionAlgorithmType(CNarrowPhaseCollisionDetection::BIM);
-//
-//	for ( int i = 0; i < (int)GetVertexArray().size(); i++ )
-//	{
-//		CNarrowCollisionInfo info;
-//		btSoftbodyNodeCL& vert = GetVertexArray()[i];
-//		
-//		CCollisionObject pointColObj;
-//		pointColObj.SetCollisionObjectType(CCollisionObject::Point);
-//		pointColObj.SetMargin(GetMargin());
-//
-//		// We use the next position of vertices which might become the current positions if there is no collision at the end of step. 
-//		pointColObj.GetTransform().GetTranslation() = vert.m_Pos + vert.m_Vel * dt;
-//
-//		if ( np.GetConvexCollisionAlgorithm()->CheckCollision(convexObject, pointColObj, &info, false) )
-//		{
-//			btVector3 pointAW = convexObject.GetTransform() * info.witnessPntA;
-//			btVector3 pointBW = pointColObj.GetTransform().GetTranslation(); // it is a point object. 
-//			btVector3 v = pointAW - pointBW;
-//			btVector3 n = v.NormalizeOther();
-//			float d = info.penetrationDepth; // d already contains margin
-//			float margin = convexObject.GetMargin();
-//
-//			// TODO:Need to know translational and angular velocities of object A.
-//			btVector3 velOnPointAW(0, 0, 0);
-//			
-//			// critical relative velocity to separate the vertex and object
-//			float critical_relVel = d / dt;
-//
-//			btVector3 relVel = vert.m_Vel-velOnPointAW;
-//
-//			// relative normal velocity of vertex. If positive, vertex is separating from the object.
-//			float relVelNLen = relVel.Dot(n);
-//			btVector3 relVelN = relVelNLen * n;
-//
-//			// relative tangential velocity to calculate friction
-//			btVector3 relVelT = relVel - relVelN;
-//
-//			// friction.
-//			float mu = GetFrictionCoef();
-//			btVector3 dVT(0, 0, 0);
-//
-//			float relVelTLen = relVelT.length();
-//
-//			if ( mu > 0 && relVelTLen > 0 )
-//			{
-//				btVector3 newVelT = max(1.0-mu*relVelNLen/relVelTLen, 0) * relVelT;
-//				dVT = -(newVelT - relVelT); 
-//			}
-//
-//			btVector3 dVN = (critical_relVel) * n;
-//			btVector3 dV = dVN + dVT;
-//
-//			if ( !vert.m_pPin )
-//			{
-//				vert.m_Vel += dV;
-//			}
-//		}
-//	}
-//
-//	return true;
-//}
-
 void btSoftbodyCL::UpdateVelocities(float dt)
 {
 	for ( int i = 0; i < m_VertexArray.size(); i++ )
 	{
 		btSoftbodyNodeCL& vert = m_VertexArray[i];
-
-		//if ( !vert.m_pPin )
-			vert.m_Vel = (vert.m_PosNext - vert.m_Pos)/dt;
+		vert.m_Vel = (vert.m_PosNext - vert.m_Pos)/dt;
 	}
 }
 
@@ -1385,7 +1183,6 @@ btSoftbodyCL& btSoftbodyCL::operator=(const btSoftbodyCL& other)
 	m_StrechSpringArray = other.m_StrechSpringArray;
 	m_BendSpringArray = other.m_BendSpringArray;
 	m_TriangleArray = other.m_TriangleArray;
-	m_NormalVecArray = other.m_NormalVecArray;
 
 	m_bDeformable = other.m_bDeformable;
 	m_bEqualVertexMass = other.m_bEqualVertexMass;
